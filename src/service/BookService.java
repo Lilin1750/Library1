@@ -42,9 +42,6 @@ public class BookService {
     }
 
     public void updateBook(int id, String bookname, String author, double price) {
-        if (price < 0) {
-            throw new InvalidPriceException("价格不能为负数！");
-        }
         Book book = bookDao.findBookById(id);
         if (bookname != null && !bookname.trim().isEmpty()) {
             book.setBookname(bookname);
