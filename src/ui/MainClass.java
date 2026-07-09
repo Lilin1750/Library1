@@ -4,9 +4,9 @@ import java.util.InputMismatchException;
 import java.util.List;
 import java.util.Scanner;
 import dao.BookDao;
-import dao.ArrayListBookDao;
+import dao.FileBookDao;
 import dao.UserDao;
-import dao.ArrayListUserDao;
+import dao.FileUserDao;
 import model.Book;
 import model.User;
 import service.BookService;
@@ -21,8 +21,8 @@ public class MainClass {
     private User currentUser;
 
     public MainClass() {
-        BookDao bookDao = new ArrayListBookDao();
-        UserDao userDao = new ArrayListUserDao();
+        BookDao bookDao =new FileBookDao("data/books.txt");
+        UserDao userDao = new FileUserDao("data/users.txt");
         this.bookService = new BookService(bookDao);
         this.userService = new UserService(userDao);
 
