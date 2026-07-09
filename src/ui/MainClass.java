@@ -3,10 +3,8 @@ package ui;
 import java.util.InputMismatchException;
 import java.util.List;
 import java.util.Scanner;
-import dao.BookDao;
-import dao.ArrayListBookDao;
-import dao.UserDao;
-import dao.ArrayListUserDao;
+
+import dao.*;
 import model.Book;
 import model.User;
 import service.BookService;
@@ -14,15 +12,15 @@ import service.UserService;
 import exception.BookException;
 import exception.UserException;
 
-public class MainClass {
-    private final BookService bookService;
+   public class MainClass {
+    public final BookService bookService;
     private final UserService userService;
     private final Scanner scanner = new Scanner(System.in);
     private User currentUser;
 
     public MainClass() {
-        BookDao bookDao = new ArrayListBookDao();
-        UserDao userDao = new ArrayListUserDao();
+        BookDao bookDao =new SqlBookDaoImpl();
+        UserDao userDao = new SqlUserDaoImpl();
         this.bookService = new BookService(bookDao);
         this.userService = new UserService(userDao);
 

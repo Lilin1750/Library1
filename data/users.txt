@@ -1,0 +1,2 @@
+goodboy|123456|user
+bedboy|123456|admin
