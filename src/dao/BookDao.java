@@ -16,6 +16,13 @@ public interface BookDao {
 
     List<Book> findAllBooks();
 
+    List<Book> searchBooks(String keyword);
+
     boolean exists(String bookname, String author, double price);
 
+    int getStock(int bookId);
+
+    void decreaseStock(int bookId);
+
+    void increaseStock(int bookId, int amount);
 }

@@ -93,4 +93,8 @@ public class FileUserDao implements UserDao {
         }
         return false;
     }
+
+    public java.util.List<User> findAllUsers() {
+        return new java.util.ArrayList<>(users);
+    }
 }

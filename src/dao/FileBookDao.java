@@ -42,12 +42,14 @@ public class FileBookDao implements BookDao {
                 String bookname = parts[1];
                 String author = parts[2];
                 int price = Integer.parseInt(parts[3]);
+                int stock = parts.length > 4 ? Integer.parseInt(parts[4]) : 1;
 
                 Book book = new Book();
                 book.setId(id);
                 book.setBookname(bookname);
                 book.setAuthor(author);
                 book.setPrice(price / 100.0);
+                book.setStock(stock);
                 books.add(book);
 
                 if (id >= nextId) {
@@ -63,7 +65,8 @@ public class FileBookDao implements BookDao {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath))) {
             for (Book book : books) {
                 writer.write(book.getId() + "|" + book.getBookname() + "|"
-                        + book.getAuthor() + "|" + (int)(book.getPrice() * 100));
+                        + book.getAuthor() + "|" + (int)(book.getPrice() * 100)
+                        + "|" + book.getStock());
                 writer.newLine();
             }
         } catch (IOException e) {
@@ -120,6 +123,19 @@ public class FileBookDao implements BookDao {
     }
 
     @Override
+    public List<Book> searchBooks(String keyword) {
+        List<Book> result = new ArrayList<>();
+        String lowerKeyword = keyword.toLowerCase();
+        for (Book book : books) {
+            if (book.getBookname().toLowerCase().contains(lowerKeyword)
+                    || book.getAuthor().toLowerCase().contains(lowerKeyword)) {
+                result.add(book);
+            }
+        }
+        return result;
+    }
+
+    @Override
     public boolean exists(String bookname, String author, double price) {
         for (Book book : books) {
             if (book.getBookname().equals(bookname)
@@ -129,6 +145,28 @@ public class FileBookDao implements BookDao {
             }
         }
         return false;
+    }
+
+    @Override
+    public int getStock(int bookId) {
+        Book book = findBookById(bookId);
+        return book.getStock();
+    }
+
+    @Override
+    public void decreaseStock(int bookId) {
+        Book book = findBookById(bookId);
+        if (book.getStock() > 0) {
+            book.setStock(book.getStock() - 1);
+        }
+        saveToFile();
+    }
+
+    @Override
+    public void increaseStock(int bookId, int amount) {
+        Book book = findBookById(bookId);
+        book.setStock(book.getStock() + amount);
+        saveToFile();
     }
 }
 

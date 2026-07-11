@@ -5,15 +5,21 @@ public class Book {
     private String bookname;
     private String author;
     private int price;
+    private int stock;
 
     public Book() {
     }
 
     public Book(int id, String bookname, String author, double price) {
+        this(id, bookname, author, price, 1);
+    }
+
+    public Book(int id, String bookname, String author, double price, int stock) {
         this.id = id;
         this.bookname = bookname;
         this.author = author;
         this.price = (int)(price * 100);
+        this.stock = stock;
     }
 
     public int getId() {
@@ -48,7 +54,15 @@ public class Book {
         this.price = (int)(price * 100);
     }
 
+    public int getStock() {
+        return stock;
+    }
+
+    public void setStock(int stock) {
+        this.stock = stock;
+    }
+
     public String toString() {
-        return "Book [编号：" + id + ", 书名：" + bookname + ", 作者：" + author + ", 价格：" + String.format("%.2f", price / 100.0) + "元]";
+        return "Book [编号：" + id + ", 书名：" + bookname + ", 作者：" + author + ", 价格：" + String.format("%.2f", price / 100.0) + "元, 库存：" + stock + "]";
     }
 }

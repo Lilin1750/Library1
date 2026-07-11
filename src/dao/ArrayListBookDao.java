@@ -56,6 +56,19 @@ public class ArrayListBookDao implements BookDao {
     }
 
     @Override
+    public List<Book> searchBooks(String keyword) {
+        List<Book> result = new ArrayList<>();
+        String lowerKeyword = keyword.toLowerCase();
+        for (Book book : books) {
+            if (book.getBookname().toLowerCase().contains(lowerKeyword)
+                    || book.getAuthor().toLowerCase().contains(lowerKeyword)) {
+                result.add(book);
+            }
+        }
+        return result;
+    }
+
+    @Override
     public boolean exists(String bookname, String author, double price) {
         for (Book book : books) {
             if (book.getBookname().equals(bookname) && book.getAuthor().equals(author) && book.getPrice() == price) {
@@ -63,5 +76,25 @@ public class ArrayListBookDao implements BookDao {
             }
         }
         return false;
+    }
+
+    @Override
+    public int getStock(int bookId) {
+        Book book = findBookById(bookId);
+        return book.getStock();
+    }
+
+    @Override
+    public void decreaseStock(int bookId) {
+        Book book = findBookById(bookId);
+        if (book.getStock() > 0) {
+            book.setStock(book.getStock() - 1);
+        }
+    }
+
+    @Override
+    public void increaseStock(int bookId, int amount) {
+        Book book = findBookById(bookId);
+        book.setStock(book.getStock() + amount);
     }
 }

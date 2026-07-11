@@ -4,7 +4,7 @@ import model.Admin;
 import model.NormalUser;
 import model.User;
 import exception.UserNotFoundException;
-import exception.UserDuplicateException;
+import exception.DataAccessException;
 
 import java.sql.*;
 
@@ -18,7 +18,7 @@ public class SqlUserDaoImpl implements UserDao {
             conn = DBUtil.getConnection();
 
             if (existsByUsername(user.getUsername())) {
-                throw new UserDuplicateException("用户名「" + user.getUsername() + "」已存在！");
+                throw new exception.UserDuplicateException("用户名「" + user.getUsername() + "」已存在！");
             }
 
             String sql = "INSERT INTO `user` (username, password, role) VALUES (?, ?, ?)";
@@ -27,8 +27,10 @@ public class SqlUserDaoImpl implements UserDao {
             ps.setString(2, user.getPassword());
             ps.setString(3, user.getRole());
             ps.executeUpdate();
+        } catch (exception.UserDuplicateException e) {
+            throw e;
         } catch (SQLException e) {
-            throw new RuntimeException("添加用户失败！", e);
+            throw new DataAccessException("添加用户失败！", e);
         } finally {
             DBUtil.close(ps, conn);
         }
@@ -50,8 +52,10 @@ public class SqlUserDaoImpl implements UserDao {
                 return mapRowToUser(rs);
             }
             throw new UserNotFoundException("用户「" + username + "」不存在！");
+        } catch (UserNotFoundException e) {
+            throw e;
         } catch (SQLException e) {
-            throw new RuntimeException("查询用户失败！", e);
+            throw new DataAccessException("查询用户失败！", e);
         } finally {
             DBUtil.close(rs, ps, conn);
         }
@@ -71,7 +75,7 @@ public class SqlUserDaoImpl implements UserDao {
 
             return rs.next() && rs.getInt(1) > 0;
         } catch (SQLException e) {
-            throw new RuntimeException("检查用户是否存在失败！", e);
+            throw new DataAccessException("检查用户是否存在失败！", e);
         } finally {
             DBUtil.close(rs, ps, conn);
         }

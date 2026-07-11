@@ -3,6 +3,8 @@ package service;
 import dao.BookDao;
 import model.Book;
 import exception.BookDuplicateException;
+import exception.InvalidBookNameException;
+import exception.InvalidAuthorException;
 import exception.InvalidPriceException;
 
 import java.util.List;
@@ -16,10 +18,10 @@ public class BookService {
 
     public void addBook(String bookname, String author, double price) {
         if (bookname == null || bookname.trim().isEmpty()) {
-            throw new InvalidPriceException("书名不能为空！");
+            throw new InvalidBookNameException("书名不能为空！");
         }
         if (author == null || author.trim().isEmpty()) {
-            throw new InvalidPriceException("作者不能为空！");
+            throw new InvalidAuthorException("作者不能为空！");
         }
         if (price < 0) {
             throw new InvalidPriceException("价格不能为负数！");
@@ -65,5 +67,9 @@ public class BookService {
 
     public List<Book> findAllBooks() {
         return bookDao.findAllBooks();
+    }
+
+    public List<Book> searchBooks(String keyword) {
+        return bookDao.searchBooks(keyword);
     }
 }
