@@ -1,12 +1,9 @@
 package controller;
 
-import model.Admin;
 import model.Book;
 import model.BorrowRecord;
-import model.User;
-import service.BookService;
-import service.BorrowService;
-import service.UserService;
+import network.Client;
+import network.ReturnResult;
 import view.LibraryView;
 
 import java.util.ArrayList;
@@ -15,17 +12,14 @@ import java.util.List;
 public class LibraryController implements LibraryView.Listener {
 
     private final LibraryView view;
-    private final BookService bookService;
-    private final UserService userService;
-    private final BorrowService borrowService;
-    private User currentUser;
+    private final Client client;
+    private String currentUsername;
+    private String currentRole;
+    private boolean isAdmin;
 
-    public LibraryController(LibraryView view, BookService bookService,
-                             UserService userService, BorrowService borrowService) {
+    public LibraryController(LibraryView view, Client client) {
         this.view = view;
-        this.bookService = bookService;
-        this.userService = userService;
-        this.borrowService = borrowService;
+        this.client = client;
         view.setListener(this);
     }
 
@@ -36,10 +30,16 @@ public class LibraryController implements LibraryView.Listener {
             return;
         }
         try {
-            currentUser = userService.login(username, password);
+            ReturnResult result = client.login(username, password);
+            result.checkError();
+
+            List<List<String>> rows = result.getRows();
+            currentUsername = rows.get(0).get(0);
+            currentRole = rows.get(0).get(1);
+            isAdmin = "true".equals(rows.get(0).get(2));
+
             view.showDashboard();
-            view.updatePermissions(currentUser.getUsername(), currentUser.getRole(),
-                    currentUser instanceof Admin);
+            view.updatePermissions(currentUsername, currentRole, isAdmin);
             onRefreshBooks();
         } catch (Exception e) {
             view.clearLoginPassword();
@@ -54,7 +54,8 @@ public class LibraryController implements LibraryView.Listener {
             return;
         }
         try {
-            userService.register(username, password, role);
+            ReturnResult result = client.register(username, password, role);
+            result.checkError();
             view.switchToLoginTab(username);
         } catch (Exception e) {
             view.showError(e.getMessage());
@@ -63,7 +64,9 @@ public class LibraryController implements LibraryView.Listener {
 
     @Override
     public void onLogout() {
-        currentUser = null;
+        currentUsername = null;
+        currentRole = null;
+        isAdmin = false;
         view.clearBooks();
         view.showLogin();
     }
@@ -71,7 +74,8 @@ public class LibraryController implements LibraryView.Listener {
     @Override
     public void onAddBook(String name, String author, double price) {
         try {
-            bookService.addBook(name, author, price);
+            ReturnResult result = client.addBook(name, author, price);
+            result.checkError();
             view.showInfo("添加图书成功！");
             onRefreshBooks();
         } catch (Exception e) {
@@ -82,7 +86,8 @@ public class LibraryController implements LibraryView.Listener {
     @Override
     public void onDeleteBook(String bookname) {
         try {
-            bookService.deleteBookByName(bookname);
+            ReturnResult result = client.deleteBookByName(bookname);
+            result.checkError();
             view.showInfo("删除图书成功！");
             onRefreshBooks();
         } catch (Exception e) {
@@ -93,7 +98,8 @@ public class LibraryController implements LibraryView.Listener {
     @Override
     public void onUpdateBook(int id, String name, String author, double price) {
         try {
-            bookService.updateBook(id, name, author, price);
+            ReturnResult result = client.updateBook(id, name, author, price);
+            result.checkError();
             view.showInfo("修改图书成功！");
             onRefreshBooks();
         } catch (Exception e) {
@@ -104,19 +110,20 @@ public class LibraryController implements LibraryView.Listener {
     @Override
     public void onSearch(String keyword) {
         try {
-            List<Book> results = searchBooks(keyword);
+            ReturnResult result = client.searchBooks(keyword);
+            result.checkError();
+            List<Book> results = Client.toBookList(result);
             if (results.isEmpty()) {
                 view.showInfo("未找到匹配的图书！");
                 return;
             }
-            boolean isAdmin = currentUser instanceof Admin;
             List<Book> selected = view.showSearchResultsAndGetSelection(results, isAdmin);
             if (selected == null) return;
 
             if (isAdmin) {
                 handleAdminAction(selected);
             } else {
-                borrowService_loop(selected);
+                doBorrowBooks(selected);
             }
         } catch (Exception e) {
             view.showError(e.getMessage());
@@ -129,10 +136,13 @@ public class LibraryController implements LibraryView.Listener {
             List<Book> results;
             try {
                 int bookId = Integer.parseInt(keyword);
-                results = new ArrayList<>();
-                results.add(bookService.findBookById(bookId));
+                ReturnResult result = client.findBookById(bookId);
+                result.checkError();
+                results = Client.toBookList(result);
             } catch (NumberFormatException e) {
-                results = searchBooks(keyword);
+                ReturnResult result = client.searchBooks(keyword);
+                result.checkError();
+                results = Client.toBookList(result);
             }
             if (results.isEmpty()) {
                 view.showInfo("未找到匹配的图书！");
@@ -140,7 +150,7 @@ public class LibraryController implements LibraryView.Listener {
             }
             List<Book> selected = view.showSearchResultsAndGetSelection(results, false);
             if (selected == null) return;
-            borrowService_loop(selected);
+            doBorrowBooks(selected);
         } catch (Exception e) {
             view.showError(e.getMessage());
         }
@@ -148,13 +158,16 @@ public class LibraryController implements LibraryView.Listener {
 
     @Override
     public void onBorrowBooks(List<Book> books) {
-        borrowService_loop(books);
+        doBorrowBooks(books);
     }
 
     @Override
     public void onReturnBooks(List<Integer> recordIds) {
         try {
-            List<BorrowRecord> unreturned = borrowService.getUnreturnedRecords(currentUser.getUsername());
+            ReturnResult urResult = client.getUnreturnedRecords(currentUsername);
+            urResult.checkError();
+            List<BorrowRecord> unreturned = Client.toBorrowRecordList(urResult);
+
             if (unreturned.isEmpty()) {
                 view.showInfo("您当前没有未归还的图书！");
                 return;
@@ -166,7 +179,8 @@ public class LibraryController implements LibraryView.Listener {
             StringBuilder failed = new StringBuilder();
             for (int recordId : selectedIds) {
                 try {
-                    borrowService.returnBook(currentUser.getUsername(), recordId);
+                    ReturnResult result = client.returnBook(currentUsername, recordId);
+                    result.checkError();
                     success++;
                 } catch (Exception e) {
                     failed.append("记录#").append(recordId).append(": ").append(e.getMessage()).append("\n");
@@ -182,7 +196,9 @@ public class LibraryController implements LibraryView.Listener {
     @Override
     public void onViewRecords() {
         try {
-            List<BorrowRecord> records = borrowService.getBorrowRecords(currentUser.getUsername());
+            ReturnResult result = client.getBorrowRecords(currentUsername);
+            result.checkError();
+            List<BorrowRecord> records = Client.toBorrowRecordList(result);
             view.displayBorrowRecords(records);
         } catch (Exception e) {
             view.showError(e.getMessage());
@@ -192,7 +208,9 @@ public class LibraryController implements LibraryView.Listener {
     @Override
     public void onRefreshBooks() {
         try {
-            view.displayBooks(bookService.findAllBooks());
+            ReturnResult result = client.listBooks();
+            result.checkError();
+            view.displayBooks(Client.toBookList(result));
         } catch (Exception e) {
             view.showError("加载图书列表失败：" + e.getMessage());
         }
@@ -200,18 +218,13 @@ public class LibraryController implements LibraryView.Listener {
 
     // ==================== 内部方法 ====================
 
-    private List<Book> searchBooks(String keyword) {
-        return bookService.searchBooks(keyword);
-    }
-
     private void handleAdminAction(List<Book> selected) {
-        if (selected.size() == 1 && !(currentUser instanceof Admin)) {
-            borrowService_loop(selected);
+        if (selected.size() == 1 && !isAdmin) {
+            doBorrowBooks(selected);
             return;
         }
 
         String action = view.askAdminAction(selected.size());
-
         if (action == null) return;
 
         if ("批量删除".equals(action)) {
@@ -220,7 +233,8 @@ public class LibraryController implements LibraryView.Listener {
             StringBuilder failed = new StringBuilder();
             for (Book book : selected) {
                 try {
-                    bookService.deleteBookById(book.getId());
+                    ReturnResult result = client.deleteBookById(book.getId());
+                    result.checkError();
                     success++;
                 } catch (Exception e) {
                     failed.append("「").append(book.getBookname()).append("」: ").append(e.getMessage()).append("\n");
@@ -245,12 +259,13 @@ public class LibraryController implements LibraryView.Listener {
         }
     }
 
-    private void borrowService_loop(List<Book> books) {
+    private void doBorrowBooks(List<Book> books) {
         int success = 0;
         StringBuilder failed = new StringBuilder();
         for (Book book : books) {
             try {
-                borrowService.borrowBook(currentUser.getUsername(), book.getId());
+                ReturnResult result = client.borrowBook(currentUsername, book.getId());
+                result.checkError();
                 success++;
             } catch (Exception e) {
                 failed.append("「").append(book.getBookname()).append("」: ").append(e.getMessage()).append("\n");
