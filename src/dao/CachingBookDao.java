@@ -25,13 +25,13 @@ public class CachingBookDao implements BookDao {
             try {
                 List<Book> books = fileCache.findAllBooks();
                 for (Book b : books) {
-                    memoryCache.addBook(b);
+                    memoryCache.addBook(copyBook(b));
                 }
             } catch (Exception e) {
                 try {
                     List<Book> books = sqlDao.findAllBooks();
                     for (Book b : books) {
-                        memoryCache.addBook(b);
+                        memoryCache.addBook(copyBook(b));
                     }
                     syncFileFromMemory();
                 } catch (Exception ex) {

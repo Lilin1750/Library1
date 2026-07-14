@@ -56,11 +56,22 @@ public class HttpApiServer {
         System.out.println("  图书管理系统 HTTP API 已启动");
         System.out.println("========================================");
         System.out.println("  监听端口  : " + port);
+        System.out.println("  本机可用IP地址:");
         try {
-            String lanIp = InetAddress.getLocalHost().getHostAddress();
-            System.out.println("  局域网地址: http://" + lanIp + ":" + port + "/api/");
-            System.out.println("  (Android 端使用此地址连接)");
+            java.util.Enumeration<java.net.NetworkInterface> nis = java.net.NetworkInterface.getNetworkInterfaces();
+            while (nis.hasMoreElements()) {
+                java.net.NetworkInterface ni = nis.nextElement();
+                if (ni.isLoopback() || !ni.isUp()) continue;
+                java.util.Enumeration<java.net.InetAddress> addrs = ni.getInetAddresses();
+                while (addrs.hasMoreElements()) {
+                    java.net.InetAddress addr = addrs.nextElement();
+                    if (addr instanceof java.net.Inet4Address) {
+                        System.out.println("    http://" + addr.getHostAddress() + ":" + port + "/api/");
+                    }
+                }
+            }
         } catch (Exception ignored) {}
+        System.out.println("  手机使用上述地址之一连接");
         System.out.println("========================================");
     }
 
@@ -370,9 +381,9 @@ public class HttpApiServer {
     public static void main(String[] args) throws IOException {
         System.out.println("===== 图书管理系统 - HTTP API 服务端 =====");
 
-        BookDao sqlBookDao = new SqlBookDaoImpl();
+        SqlBorrowRecordDaoImpl borrowRecordDao = new SqlBorrowRecordDaoImpl();
+        BookDao sqlBookDao = new SqlBookDaoImpl(borrowRecordDao);
         UserDao sqlUserDao = new SqlUserDaoImpl();
-        BorrowRecordDao borrowRecordDao = new SqlBorrowRecordDaoImpl();
 
         ArrayListBookDao memBookCache = new ArrayListBookDao();
         FileBookDao fileBookCache = new FileBookDao("data/books_cache.txt");

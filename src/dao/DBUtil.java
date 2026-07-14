@@ -10,7 +10,7 @@ public class DBUtil {
     private static final Logger LOGGER = Logger.getLogger(DBUtil.class.getName());
     private static final String URL = "jdbc:mysql://localhost:3306/library?useSSL=false&serverTimezone=UTC&characterEncoding=utf8";
     private static final String USER = "root";
-    private static final String PASSWORD = "12345";
+    private static final String PASSWORD = "121018";
 
     static {
         try {

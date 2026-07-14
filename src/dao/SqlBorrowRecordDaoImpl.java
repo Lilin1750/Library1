@@ -201,4 +201,21 @@ public class SqlBorrowRecordDaoImpl implements BorrowRecordDao {
         LocalDateTime returnDate = returnTs != null ? returnTs.toLocalDateTime() : null;
         return new BorrowRecord(id, username, bookId, borrowDate, returnDate);
     }
+
+    @Override
+    public void deleteByBookId(int bookId) {
+        Connection conn = null;
+        PreparedStatement ps = null;
+        try {
+            conn = DBUtil.getConnection();
+            String sql = "DELETE FROM borrow_record WHERE book_id = ?";
+            ps = conn.prepareStatement(sql);
+            ps.setInt(1, bookId);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            throw new DataAccessException("删除图书的借阅记录失败！", e);
+        } finally {
+            DBUtil.close(ps, conn);
+        }
+    }
 }

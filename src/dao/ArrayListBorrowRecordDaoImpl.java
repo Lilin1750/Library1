@@ -89,4 +89,9 @@ public class ArrayListBorrowRecordDaoImpl implements BorrowRecordDao {
         }
         return result;
     }
+
+    @Override
+    public synchronized void deleteByBookId(int bookId) {
+        records.removeIf(r -> r.getBookId() == bookId);
+    }
 }

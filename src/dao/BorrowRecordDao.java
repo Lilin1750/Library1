@@ -13,4 +13,6 @@ public interface BorrowRecordDao {
     List<BorrowRecord> findByUsername(String username);
 
     List<BorrowRecord> findUnreturnedByUsername(String username);
+
+    void deleteByBookId(int bookId);
 }

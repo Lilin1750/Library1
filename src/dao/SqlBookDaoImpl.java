@@ -11,6 +11,16 @@ import java.util.List;
 
 public class SqlBookDaoImpl implements BookDao {
 
+    private final BorrowRecordDao borrowRecordDao;
+
+    public SqlBookDaoImpl() {
+        this.borrowRecordDao = new SqlBorrowRecordDaoImpl();
+    }
+
+    public SqlBookDaoImpl(BorrowRecordDao borrowRecordDao) {
+        this.borrowRecordDao = borrowRecordDao;
+    }
+
     @Override
     public void addBook(Book book) {
         Connection conn = null;
@@ -50,12 +60,17 @@ public class SqlBookDaoImpl implements BookDao {
         PreparedStatement ps = null;
         try {
             conn = DBUtil.getConnection();
-            findBookById(id);
+
+            // 先删除该图书的所有借阅记录，避免外键约束阻止删除
+            borrowRecordDao.deleteByBookId(id);
 
             String sql = "DELETE FROM book WHERE id = ?";
             ps = conn.prepareStatement(sql);
             ps.setInt(1, id);
-            ps.executeUpdate();
+            int affected = ps.executeUpdate();
+            if (affected == 0) {
+                throw new BookNotFoundException("未找到编号为 " + id + " 的图书！");
+            }
         } catch (BookNotFoundException e) {
             throw e;
         } catch (SQLException e) {

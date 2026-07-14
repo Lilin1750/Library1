@@ -2,8 +2,12 @@ CREATE DATABASE IF NOT EXISTS library DEFAULT CHARACTER SET utf8mb4 COLLATE utf8
 
 USE library;
 
--- 图书表
+-- 先删有外键的表，再删被引用的表
+DROP TABLE IF EXISTS borrow_record;
 DROP TABLE IF EXISTS book;
+DROP TABLE IF EXISTS `user`;
+
+-- 图书表
 CREATE TABLE book (
     id        INT           AUTO_INCREMENT PRIMARY KEY COMMENT '图书编号',
     bookname  VARCHAR(100)  NOT NULL COMMENT '书名',
@@ -13,7 +17,6 @@ CREATE TABLE book (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='图书表';
 
 -- 用户表
-DROP TABLE IF EXISTS `user`;
 CREATE TABLE `user` (
     username  VARCHAR(50)   PRIMARY KEY COMMENT '用户名',
     password  VARCHAR(100)  NOT NULL COMMENT '密码',
@@ -21,7 +24,6 @@ CREATE TABLE `user` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户表';
 
 -- 借阅记录表
-DROP TABLE IF EXISTS borrow_record;
 CREATE TABLE borrow_record (
     id           INT       AUTO_INCREMENT PRIMARY KEY COMMENT '借阅记录编号',
     username     VARCHAR(50) NOT NULL COMMENT '借阅用户名',

@@ -51,11 +51,6 @@ public class Server {
                 System.out.println("  局域网地址: " + lanIp + ":" + port);
                 System.out.println("  (Android局域网连接用此地址)");
             } catch (Exception ignored) {}
-            System.out.println("----------------------------------------");
-            System.out.println("  ngrok 广域网穿透命令:");
-            System.out.println("    ngrok tcp " + port);
-            System.out.println("  启动后 ngrok 会显示公网地址，");
-            System.out.println("  将该地址告知 Android 端即可连接。");
             System.out.println("========================================");
             while (running) {
                 Socket client = serverSocket.accept();
@@ -272,9 +267,9 @@ public class Server {
     public static void main(String[] args) {
         System.out.println("===== 图书管理系统 - 服务端 =====");
 
-        BookDao sqlBookDao = new SqlBookDaoImpl();
+        SqlBorrowRecordDaoImpl borrowRecordDao = new SqlBorrowRecordDaoImpl();
+        BookDao sqlBookDao = new SqlBookDaoImpl(borrowRecordDao);
         UserDao sqlUserDao = new SqlUserDaoImpl();
-        BorrowRecordDao borrowRecordDao = new SqlBorrowRecordDaoImpl();
 
         ArrayListBookDao memBookCache = new ArrayListBookDao();
         FileBookDao fileBookCache = new FileBookDao("data/books_cache.txt");

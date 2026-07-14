@@ -12,7 +12,9 @@ public class ArrayListBookDao implements BookDao {
 
     @Override
     public void addBook(Book book) {
-        book.setId(nextId++);
+        if (book.getId() <= 0) {
+            book.setId(nextId++);
+        }
         books.add(book);
     }
 
