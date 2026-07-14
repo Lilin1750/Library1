@@ -1,10 +1,7 @@
 package ui;
 
 import controller.LibraryController;
-import dao.*;
-import service.BookService;
-import service.BorrowService;
-import service.UserService;
+import network.Client;
 import view.LibraryView;
 
 import javax.swing.*;
@@ -17,25 +14,16 @@ public class MainClass {
         }
 
         SwingUtilities.invokeLater(() -> {
-            BookDao sqlBookDao = new SqlBookDaoImpl();
-            UserDao sqlUserDao = new SqlUserDaoImpl();
-            BorrowRecordDao borrowRecordDao = new SqlBorrowRecordDaoImpl();
-
-            ArrayListBookDao memBookCache = new ArrayListBookDao();
-            FileBookDao fileBookCache = new FileBookDao("data/books_cache.txt");
-            BookDao bookDao = new CachingBookDao(sqlBookDao, memBookCache, fileBookCache);
-
-            ArrayListUserDao memUserCache = new ArrayListUserDao();
-            FileUserDao fileUserCache = new FileUserDao("data/users_cache.txt");
-            UserDao userDao = new CachingUserDao(sqlUserDao, memUserCache, fileUserCache);
-
-            BookService bookService = new BookService(bookDao);
-            UserService userService = new UserService(userDao);
-            BorrowService borrowService = new BorrowService(bookDao, userDao, borrowRecordDao);
-
-            LibraryView view = new LibraryView();
-            new LibraryController(view, bookService, userService, borrowService);
-            view.setVisible(true);
+            try {
+                Client client = new Client("127.0.0.1", 8888);
+                LibraryView view = new LibraryView();
+                new LibraryController(view, client);
+                view.setVisible(true);
+            } catch (Exception e) {
+                JOptionPane.showMessageDialog(null,
+                        "无法连接服务端：" + e.getMessage() + "\n请确保服务端已启动。",
+                        "连接失败", JOptionPane.ERROR_MESSAGE);
+            }
         });
     }
 }

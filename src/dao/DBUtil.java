@@ -3,8 +3,11 @@ package dao;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class DBUtil {
+    private static final Logger LOGGER = Logger.getLogger(DBUtil.class.getName());
     private static final String URL = "jdbc:mysql://localhost:3306/library?useSSL=false&serverTimezone=UTC&characterEncoding=utf8";
     private static final String USER = "root";
     private static final String PASSWORD = "12345";
@@ -31,7 +34,7 @@ public class DBUtil {
                 try {
                     res.close();
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    LOGGER.log(Level.WARNING, "资源关闭失败", e);
                 }
             }
         }
