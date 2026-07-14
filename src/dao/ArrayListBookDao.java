@@ -3,48 +3,58 @@ package dao;
 import model.Book;
 import exception.BookNotFoundException;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 public class ArrayListBookDao implements BookDao {
-    private final List<Book> books = new ArrayList<>();
-    private int nextId = 1;
+    private final TreeMap<Integer, Book> books = new TreeMap<>();
+    private final TreeSet<Integer> usedIds = new TreeSet<>();
 
     @Override
     public void addBook(Book book) {
         if (book.getId() <= 0) {
-            book.setId(nextId++);
+            int newId = 1;
+            for (int id : usedIds) {
+                if (id == newId) {
+                    newId++;
+                } else {
+                    break;
+                }
+            }
+            book.setId(newId);
         }
-        books.add(book);
+        books.put(book.getId(), book);
+        usedIds.add(book.getId());
     }
 
     @Override
     public void deleteBook(int id) {
-        Book book = findBookById(id);
-        books.remove(book);
+        if (!books.containsKey(id)) {
+            throw new BookNotFoundException("未找到编号为 " + id + " 的图书！");
+        }
+        books.remove(id);
+        usedIds.remove(id);
     }
 
     @Override
     public void updateBook(Book book) {
-        Book existing = findBookById(book.getId());
-        existing.setBookname(book.getBookname());
-        existing.setAuthor(book.getAuthor());
-        existing.setPrice(book.getPrice());
+        if (!books.containsKey(book.getId())) {
+            throw new BookNotFoundException("未找到编号为 " + book.getId() + " 的图书！");
+        }
+        books.put(book.getId(), book);
     }
 
     @Override
     public Book findBookById(int id) {
-        for (Book book : books) {
-            if (book.getId() == id) {
-                return book;
-            }
+        Book book = books.get(id);
+        if (book == null) {
+            throw new BookNotFoundException("未找到编号为 " + id + " 的图书！");
         }
-        throw new BookNotFoundException("未找到编号为 " + id + " 的图书！");
+        return book;
     }
 
     @Override
     public Book findBookByName(String bookname) {
-        for (Book book : books) {
+        for (Book book : books.values()) {
             if (book.getBookname().equals(bookname)) {
                 return book;
             }
@@ -54,14 +64,14 @@ public class ArrayListBookDao implements BookDao {
 
     @Override
     public List<Book> findAllBooks() {
-        return new ArrayList<>(books);
+        return new ArrayList<>(books.values());
     }
 
     @Override
     public List<Book> searchBooks(String keyword) {
         List<Book> result = new ArrayList<>();
         String lowerKeyword = keyword.toLowerCase();
-        for (Book book : books) {
+        for (Book book : books.values()) {
             if (book.getBookname().toLowerCase().contains(lowerKeyword)
                     || book.getAuthor().toLowerCase().contains(lowerKeyword)) {
                 result.add(book);
@@ -72,8 +82,10 @@ public class ArrayListBookDao implements BookDao {
 
     @Override
     public boolean exists(String bookname, String author, double price) {
-        for (Book book : books) {
-            if (book.getBookname().equals(bookname) && book.getAuthor().equals(author) && book.getPrice() == price) {
+        for (Book book : books.values()) {
+            if (book.getBookname().equals(bookname)
+                    && book.getAuthor().equals(author)
+                    && book.getPrice() == price) {
                 return true;
             }
         }
@@ -82,8 +94,7 @@ public class ArrayListBookDao implements BookDao {
 
     @Override
     public int getStock(int bookId) {
-        Book book = findBookById(bookId);
-        return book.getStock();
+        return findBookById(bookId).getStock();
     }
 
     @Override

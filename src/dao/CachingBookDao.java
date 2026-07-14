@@ -22,18 +22,19 @@ public class CachingBookDao implements BookDao {
 
     private void ensureMemoryLoaded() {
         if (!memoryLoaded) {
+            // 优先从数据库加载（数据库是真理源），文件缓存作为降级
             try {
-                List<Book> books = fileCache.findAllBooks();
+                List<Book> books = sqlDao.findAllBooks();
                 for (Book b : books) {
                     memoryCache.addBook(copyBook(b));
                 }
+                syncFileFromMemory();
             } catch (Exception e) {
                 try {
-                    List<Book> books = sqlDao.findAllBooks();
+                    List<Book> books = fileCache.findAllBooks();
                     for (Book b : books) {
                         memoryCache.addBook(copyBook(b));
                     }
-                    syncFileFromMemory();
                 } catch (Exception ex) {
                     throw new DataAccessException("加载缓存数据失败！", ex);
                 }
@@ -138,7 +139,14 @@ public class CachingBookDao implements BookDao {
     @Override
     public int getStock(int bookId) {
         ensureMemoryLoaded();
-        return memoryCache.getStock(bookId);
+        try {
+            return memoryCache.getStock(bookId);
+        } catch (BookNotFoundException e) {
+            Book book = sqlDao.findBookById(bookId);
+            memoryCache.addBook(copyBook(book));
+            try { fileCache.addBook(copyBook(book)); } catch (Exception ignored) {}
+            return book.getStock();
+        }
     }
 
     @Override
